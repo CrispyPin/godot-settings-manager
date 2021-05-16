@@ -1,5 +1,7 @@
 extends Node
 
+signal setting_changed # emitted with name, value
+signal settings_loaded # emitted when settings are loaded from file
 
 const DEBUG_SETTINGS = false
 const SETTINGS_PATH = "user://settings.json"
@@ -31,40 +33,41 @@ const SETTINGS_DEF = {
     }
 }
 
-var settings_loaded = false
-var paused = false
-var settings = {}
+var _settings = {}
 
 
 func _ready() -> void:
     _init_settings()
     load_settings()
-    settings_loaded = true
-    get_node("/root/Default").queue_free()
 
 
 func get_setting(key):
-    return settings[key]
+    return _settings[key]
 
 
 func set_setting(key, val):
-    settings[key] = val
+    if _settings[key] == val:
+        return
+    _settings[key] = val
+
+    emit_signal("setting_changed", key, val)
+    save_settings()
+
     if DEBUG_SETTINGS:
         print("Settings changed: ", key, " -> ", val)
-    save_settings()
 
 
 func _init_settings():
     for key in SETTINGS_DEF:
-        settings[key] = SETTINGS_DEF[key].default
+        _settings[key] = SETTINGS_DEF[key].default
     if DEBUG_SETTINGS:
-        print("Default settings: ", settings)
+        print("Default settings: ", _settings)
 
 
 func save_settings():
     var file = File.new()
     file.open(SETTINGS_PATH, File.WRITE)
-    file.store_line(to_json(settings))
+    file.store_line(to_json(_settings))
     file.close()
 
 
@@ -80,12 +83,14 @@ func load_settings() -> void:
     var new_settings = parse_json(file.get_as_text())
     file.close()
 
-    # in case settings format has changed, this is better than just clonging blindly
+    # in case the settings format has changed, this is better than just clonging blindly
     for key in new_settings:
-        if settings.has(key):
-            settings[key] = new_settings[key]
+        if _settings.has(key):
+            _settings[key] = new_settings[key]
+
+    emit_signal("settings_loaded")
     save_settings()
+
     if DEBUG_SETTINGS:
         print("Loaded settings from file")
-        print(settings)
-
+        print(_settings)
