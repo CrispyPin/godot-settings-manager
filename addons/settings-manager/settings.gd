@@ -65,9 +65,14 @@ func _init_settings():
 
 
 func save_settings():
+    var to_save = {}
+    for key in _settings:
+        if not (SETTINGS_DEF[key].has("flags") and "no_save" in SETTINGS_DEF[key].flags):
+            to_save[key] = _settings[key]
+
     var file = File.new()
     file.open(SETTINGS_PATH, File.WRITE)
-    file.store_line(to_json(_settings))
+    file.store_line(to_json(to_save))
     file.close()
 
 
