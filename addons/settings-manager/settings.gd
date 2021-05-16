@@ -28,8 +28,8 @@ const SETTINGS_DEF = {
     },
     "example_4": {
         "name": "Example Vector3",
-        "type": "vector3",
-        "default": Vector3(1,2,3)
+        "type": "Vector3",
+        "default": [1, 2, 3]
     }
 }
 
@@ -87,11 +87,18 @@ func load_settings() -> void:
     # in case the settings format has changed, this is better than just clonging blindly
     for key in new_settings:
         if _settings.has(key):
-            _settings[key] = new_settings[key]
+            var value = new_settings[key]
+            match SETTINGS_DEF[key].type:
+                ["Vector2", "vector2"]:
+                    _settings[key] = Vector2(value[0], value[1])
+                ["Vector3", "vector3"]:
+                    _settings[key] = Vector3(value[0], value[1], value[2])
+                _:
+                    _settings[key] = value
 
     emit_signal("settings_loaded")
     save_settings()
 
     if DEBUG_SETTINGS:
         print("Loaded settings from file")
-        print(_settings)
+        print(_settings
