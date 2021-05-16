@@ -101,4 +101,4 @@ func load_settings() -> void:
 
     if DEBUG_SETTINGS:
         print("Loaded settings from file")
-        print(_settings
+        print(_settings)
