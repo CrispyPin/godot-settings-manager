@@ -3,7 +3,7 @@ extends Node
 signal setting_changed # emitted with name, value
 signal settings_loaded # emitted when settings are loaded from file
 
-const DEBUG_SETTINGS = false
+const DEBUG_SETTINGS = true
 const SETTINGS_PATH = "user://settings.json"
 const SETTINGS_DEF = {
     "example_1": {
@@ -77,6 +77,7 @@ func load_settings() -> void:
     if not file.file_exists(SETTINGS_PATH):
         if DEBUG_SETTINGS:
             print("No settings file exists, using defaults")
+        save_settings()
         return
 
     file.open(SETTINGS_PATH, File.READ)
