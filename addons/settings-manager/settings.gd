@@ -1,7 +1,7 @@
 extends Node
 
 signal setting_changed # emitted with name, value
-signal settings_loaded # emitted when settings are loaded from file
+signal settings_loaded # emitted when settings are loaded from file, needs to be connected in _init()
 
 const DEBUG_SETTINGS = true
 const SETTINGS_PATH = "user://settings.json"
@@ -39,6 +39,8 @@ var _settings = {}
 func _ready() -> void:
     _init_settings()
     load_settings()
+    emit_signal("settings_loaded")
+    save_settings()
 
 
 func get_setting(key):
@@ -82,7 +84,6 @@ func load_settings() -> void:
     if not file.file_exists(SETTINGS_PATH):
         if DEBUG_SETTINGS:
             print("No settings file exists, using defaults")
-        save_settings()
         return
 
     file.open(SETTINGS_PATH, File.READ)
@@ -100,9 +101,6 @@ func load_settings() -> void:
                     _settings[key] = Vector3(value[0], value[1], value[2])
                 _:
                     _settings[key] = value
-
-    emit_signal("settings_loaded")
-    save_settings()
 
     if DEBUG_SETTINGS:
         print("Loaded settings from file")
