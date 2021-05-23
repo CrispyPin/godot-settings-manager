@@ -1,11 +1,10 @@
 extends Node
 
-signal setting_changed # emitted with name, value
 signal settings_saved
 signal settings_loaded # emitted when settings are loaded from file, needs to be connected in _init()
 
-const DEBUG_SETTINGS = true
-const SETTINGS_PATH = "user://settings.json"
+var DEBUG_SETTINGS = true
+var SETTINGS_PATH = "user://settings.json"
 const SETTINGS_DEF = {
 	"example_1": {
 		"name": "Example Toggle",
@@ -63,7 +62,6 @@ var s: Dictionary = {}
 func _ready() -> void:
 	_init_settings()
 	load_settings()
-	emit_signal("settings_loaded")
 	save_settings()
 
 
@@ -79,7 +77,6 @@ func _init_sub_setting(def):
 		"dict":
 			if has_flag(def, "resize"):
 				return {}
-
 			var _s = {}
 			for key in def.definition:
 				_s[key] = _init_sub_setting(def.definition[key])
@@ -99,18 +96,12 @@ func save_settings():
 	file.open(SETTINGS_PATH, File.WRITE)
 	file.store_line(to_json(to_save))
 	file.close()
+	emit_signal("settings_saved")
 
 
 func _save_sub_setting(val, def):
 	if has_flag(def, "no_save"):
 		return null
-	if has_flag(def, "resize"):
-		var _s = {}
-		for key in val:
-			var v = _save_sub_setting(val[key], def.definition)
-			if v != null:
-				_s[key] = v
-		return _s
 
 	match def.type:
 		"vector2":
@@ -120,9 +111,11 @@ func _save_sub_setting(val, def):
 		"quat":
 			return [val.x, val.y, val.z, val.w]
 		"dict":
+			var resize = has_flag(def, "resize")
 			var _s = {}
 			for key in val:
-				var v = _save_sub_setting(val[key], def.definition[key])
+				var subdef = def.definition if resize else def.definition[key]
+				var v = _save_sub_setting(val[key], subdef)
 				if v != null:
 					_s[key] = v
 			return _s
@@ -145,20 +138,13 @@ func load_settings() -> void:
 	for key in new_settings:
 		s[key] = _load_sub_setting(new_settings[key], SETTINGS_DEF[key])
 
+	emit_signal("settings_loaded")
 	if DEBUG_SETTINGS:
 		print("Loaded settings from file")
 		print(s)
 
 
 func _load_sub_setting(val, def):
-	if has_flag(def, "resize"):
-		var _s = {}
-		for key in val:
-			var v = _load_sub_setting(val[key], def.definition)
-			if v != null:
-				_s[key] = v
-		return _s
-
 	match def.type:
 		"vector2":
 			return Vector2(val[0], val[1])
@@ -168,22 +154,16 @@ func _load_sub_setting(val, def):
 			return Quat(val[0], val[1], val[2], val[3])
 		"dict":
 			var _s = {}
+			var resize = has_flag(def, "resize")
 			for key in val:
-				_s[key] = _load_sub_setting(val[key], def.definition[key])
+				var subdef = def.definition if resize else def.definition[key]
+				_s[key] = _load_sub_setting(val[key], subdef)
 			return _s
 		_:
 			return val
 
 
-static func string_key(string_key, dict): # uses format "a.b.c" to get a value deeper in a dict
-	var keys = string_key.split(".")
-	var v = dict
-	for k in keys:
-		v = v[k]
-	return v
-
-
-static func has_flag(def, flag):
+func has_flag(def, flag):
 	return def.has("flags") and flag in def.flags
 
 
