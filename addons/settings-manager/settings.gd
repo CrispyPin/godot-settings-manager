@@ -17,15 +17,12 @@ const SETTINGS_DEF = {
 	"example_2": {
 		"name": "Example Number",
 		"type": "number",
-		"default": 42,
-		"min": 1, # optional
-		"max": 100, # optional
-		"step": 4 # optional
+		"default": 42
 	},
 	"example_3": {
 		"name": "Example section",
 		"type": "dict",
-		"default": {
+		"definition": {
 			"example_4": {
 				"name": "Example text",
 				"type": "string",
@@ -43,6 +40,21 @@ const SETTINGS_DEF = {
 			}
 		}
 	},
+	"example_7": {
+		"name": "Example array",
+		"type": "array",
+		"default": [1,23,4]
+	},
+	"example_8": {
+		"name": "Example set of objects",
+		"type": "dict",
+		"flags": ["resize"],
+		"definition": {
+			"name": "object",
+			"type": "array",
+			"default": [99,45,1]
+		}
+	},
 }
 
 var s: Dictionary = {}
@@ -55,29 +67,31 @@ func _ready() -> void:
 	save_settings()
 
 
-
 func _init_settings() -> void:
 	for key in SETTINGS_DEF:
-		s[key] = _init_sub_setting(key, SETTINGS_DEF)
+		s[key] = _init_sub_setting(SETTINGS_DEF[key])
 	if DEBUG_SETTINGS:
 		print("Default settings: ", s)
 
 
-func _init_sub_setting(key, def):
-	match def[key].type:
+func _init_sub_setting(def):
+	match def.type:
 		"dict":
+			if has_flag(def, "resize"):
+				return {}
+
 			var _s = {}
-			for k in def[key].default:
-				_s[k] = _init_sub_setting(k, def[key].default)
+			for key in def.definition:
+				_s[key] = _init_sub_setting(def.definition[key])
 			return _s
 		_:
-			return def[key].default
+			return def.default
 
 
 func save_settings():
 	var to_save = {}
 	for key in s:
-		var val = _save_sub_setting(key, s, SETTINGS_DEF)
+		var val = _save_sub_setting(s[key], SETTINGS_DEF[key])
 		if val != null:
 			to_save[key] = val
 
@@ -87,25 +101,33 @@ func save_settings():
 	file.close()
 
 
-func _save_sub_setting(key, settings, def):
-	if def[key].has("flags") and "no_save" in def[key].flags:
+func _save_sub_setting(val, def):
+	if has_flag(def, "no_save"):
 		return null
-	match def[key].type:
+	if has_flag(def, "resize"):
+		var _s = {}
+		for key in val:
+			var v = _save_sub_setting(val[key], def.definition)
+			if v != null:
+				_s[key] = v
+		return _s
+
+	match def.type:
 		"vector2":
-			return [settings[key].x, settings[key].y]
+			return [val.x, val.y]
 		"vector3":
-			return [settings[key].x, settings[key].y, settings[key].z]
+			return [val.x, val.y, val.z]
 		"quat":
-			return [settings[key].x, settings[key].y, settings[key].z, settings[key].w]
+			return [val.x, val.y, val.z, val.w]
 		"dict":
 			var _s = {}
-			for k in settings[key]:
-				var v = _save_sub_setting(k, settings[key], def[key].default)
+			for key in val:
+				var v = _save_sub_setting(val[key], def.definition[key])
 				if v != null:
-					_s[k] = v
+					_s[key] = v
 			return _s
 		_:
-			return settings[key]
+			return val
 
 
 func load_settings() -> void:
@@ -121,15 +143,23 @@ func load_settings() -> void:
 	file.close()
 
 	for key in new_settings:
-		s[key] = _load_sub_setting(key, new_settings[key], SETTINGS_DEF)
+		s[key] = _load_sub_setting(new_settings[key], SETTINGS_DEF[key])
 
 	if DEBUG_SETTINGS:
 		print("Loaded settings from file")
 		print(s)
 
 
-func _load_sub_setting(key, val, def):
-	match def[key].type:
+func _load_sub_setting(val, def):
+	if has_flag(def, "resize"):
+		var _s = {}
+		for key in val:
+			var v = _load_sub_setting(val[key], def.definition)
+			if v != null:
+				_s[key] = v
+		return _s
+
+	match def.type:
 		"vector2":
 			return Vector2(val[0], val[1])
 		"vector3":
@@ -138,11 +168,23 @@ func _load_sub_setting(key, val, def):
 			return Quat(val[0], val[1], val[2], val[3])
 		"dict":
 			var _s = {}
-			for k in val:
-				_s[k] = _load_sub_setting(k, val[k], def[key].default)
+			for key in val:
+				_s[key] = _load_sub_setting(val[key], def.definition[key])
 			return _s
 		_:
 			return val
+
+
+static func string_key(string_key, dict): # uses format "a.b.c" to get a value deeper in a dict
+	var keys = string_key.split(".")
+	var v = dict
+	for k in keys:
+		v = v[k]
+	return v
+
+
+static func has_flag(def, flag):
+	return def.has("flags") and flag in def.flags
 
 
 func _exit_tree() -> void:
