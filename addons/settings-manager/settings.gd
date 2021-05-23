@@ -45,13 +45,32 @@ const SETTINGS_DEF = {
 		"default": [1,23,4]
 	},
 	"example_8": {
-		"name": "Example set of objects",
+		"name": "Example dict with varying size containing arrays",
 		"type": "dict",
 		"flags": ["resize"],
 		"definition": {
-			"name": "object",
 			"type": "array",
 			"default": [99,45,1]
+		}
+	},
+	"example_9": {
+		"name": "Example dict with varying size containing more dicts",
+		"type": "dict",
+		"flags": ["resize"],
+		"definition": {
+			"type": "dict",
+			"definition": {
+				"property1": {
+					"name": "Property 1",
+					"type": "number",
+					"default": 123
+				},
+				"property2": {
+					"name": "Property 2",
+					"type": "number",
+					"default": 345
+				},
+			}
 		}
 	},
 }
