@@ -45,7 +45,10 @@ const DEF = {
 		"flags": ["resize"],
 		"definition": {
 			"type": "array",
-			"default": [99,45,1]
+			"default": [99,45,1] # does nothing on its own
+		},
+		"default": {
+			"default_array": [1,2,3]
 		}
 	},
 	"example_9": {
@@ -58,13 +61,19 @@ const DEF = {
 				"property1": {
 					"name": "Property 1",
 					"type": "number",
-					"default": 123
+					"default": 123 # does nothing on its own
 				},
 				"property2": {
 					"name": "Property 2",
 					"type": "number",
-					"default": 345
+					"default": 345 # does nothing on its own
 				},
+			}
+		},
+		"default": {
+			"item1": {
+				"property1": 9000,
+				"property2": 420
 			}
 		}
 	},

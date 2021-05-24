@@ -27,7 +27,7 @@ func _init_sub_setting(def):
 	match def.type:
 		"dict":
 			if has_flag(def, "resize"):
-				return {}
+				return def.default
 			var _s = {}
 			for key in def.definition:
 				_s[key] = _init_sub_setting(def.definition[key])
